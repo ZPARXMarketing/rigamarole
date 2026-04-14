@@ -1,0 +1,150 @@
+export const DEFAULT_CARDS = [
+  {
+    id: "opener",
+    name: "Opener",
+    variants: [
+      {
+        id: "opener-a",
+        label: "Pattern Interrupt",
+        text: "Hey {{first_name}}, this is Roy calling from ZPARX — I know this is totally out of the blue, and I promise I'm not selling you extended car warranties. I actually had a quick question about your business if you've got 30 seconds?",
+        hits: 0,
+        misses: 0,
+        maybes: 0,
+      },
+      {
+        id: "opener-b",
+        label: "Direct Referral",
+        text: "Hi {{first_name}}, this is Roy with ZPARX Marketing. I was looking into {{company}} and noticed you might be a fit for something we're doing with a few other businesses in {{city}}. Got a quick minute?",
+        hits: 0,
+        misses: 0,
+        maybes: 0,
+      },
+      {
+        id: "opener-c",
+        label: "Curiosity Hook",
+        text: "{{first_name}}? Hey — Roy here with ZPARX. Quick question before you hang up: if I could show you a way to get qualified appointments on your calendar without paying a dime until it works, would that be worth 60 seconds?",
+        hits: 0,
+        misses: 0,
+        maybes: 0,
+      },
+    ],
+    activeVariant: 0,
+  },
+  {
+    id: "pain",
+    name: "Pain Discovery",
+    variants: [
+      {
+        id: "pain-a",
+        label: "Assumptive Dig",
+        text: "So most {{industry}} businesses I talk to are stuck in one of two spots — either they're getting leads but the quality is garbage, or they're so busy with delivery they've stopped marketing altogether. Which one sounds more like you?",
+        hits: 0,
+        misses: 0,
+        maybes: 0,
+      },
+      {
+        id: "pain-b",
+        label: "Open Pull",
+        text: "Tell me a little about how you're currently getting new clients. Are you doing any advertising, or is it mostly word-of-mouth and referrals right now?",
+        hits: 0,
+        misses: 0,
+        maybes: 0,
+      },
+    ],
+    activeVariant: 0,
+  },
+  {
+    id: "value",
+    name: "Value Prop",
+    variants: [
+      {
+        id: "value-a",
+        label: "Pay-for-Performance",
+        text: "Here's the deal — we run targeted ads for {{industry}} businesses, and we handle everything: the ads, the follow-up, the appointment setting. You only pay when qualified appointments actually show up on your calendar. No retainers, no long contracts. If we don't perform, you don't pay.",
+        hits: 0,
+        misses: 0,
+        maybes: 0,
+      },
+      {
+        id: "value-b",
+        label: "Risk Reversal",
+        text: "What we do is pretty simple — we fill your calendar with people who already want what you're selling. We handle the ads, the AI-powered follow-up, all of it. And the kicker is you don't pay us unless it works. We eat the risk.",
+        hits: 0,
+        misses: 0,
+        maybes: 0,
+      },
+    ],
+    activeVariant: 0,
+  },
+  {
+    id: "objection-busy",
+    name: '"I\'m Too Busy"',
+    variants: [
+      {
+        id: "busy-a",
+        label: "Reframe",
+        text: "Honestly, that's the best sign — it means you've got demand. The whole point of what we do is make sure you're busy with the RIGHT clients, not just anyone. If you could pick your ideal customer, who would that be?",
+        hits: 0,
+        misses: 0,
+        maybes: 0,
+      },
+      {
+        id: "busy-b",
+        label: "Future Pace",
+        text: "Totally get it. Most of the guys we work with felt the same way before we started. The thing is, we handle 100% of the lead gen and follow-up — you literally just show up to the calls. Would it be worth 15 minutes this week to see if it's a fit?",
+        hits: 0,
+        misses: 0,
+        maybes: 0,
+      },
+    ],
+    activeVariant: 0,
+  },
+  {
+    id: "objection-cost",
+    name: '"What\'s It Cost?"',
+    variants: [
+      {
+        id: "cost-a",
+        label: "Zero Risk",
+        text: "That's the beauty of it — there's zero upfront cost. No retainers. You literally only pay when a qualified appointment shows up. So the question isn't whether you can afford it — it's whether you can afford to keep leaving money on the table.",
+        hits: 0,
+        misses: 0,
+        maybes: 0,
+      },
+      {
+        id: "cost-b",
+        label: "Anchor & Flip",
+        text: "Most agencies charge $2-5K a month whether they get you results or not. We flipped that — you pay per qualified appointment that shows. If we don't deliver, you keep your money. Fair enough?",
+        hits: 0,
+        misses: 0,
+        maybes: 0,
+      },
+    ],
+    activeVariant: 0,
+  },
+  {
+    id: "close",
+    name: "Close / Book",
+    variants: [
+      {
+        id: "close-a",
+        label: "Assumptive",
+        text: "Cool — what I'd love to do is get 15 minutes on the calendar where I can walk you through exactly how this would work for {{company}}. I've got Thursday or Friday afternoon — which works better?",
+        hits: 0,
+        misses: 0,
+        maybes: 0,
+      },
+      {
+        id: "close-b",
+        label: "Soft Trial",
+        text: "I don't want to take more of your time right now — but would it make sense to hop on a quick 15-minute call this week? I'll show you exactly what we'd do, and if it's not a fit, no hard feelings.",
+        hits: 0,
+        misses: 0,
+        maybes: 0,
+      },
+    ],
+    activeVariant: 0,
+  },
+];
+
+export const uid = () => Math.random().toString(36).slice(2, 9);
