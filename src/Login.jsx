@@ -3,27 +3,65 @@ import { supabase } from "./supabaseClient.js";
 
 export default function Login() {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState("idle"); // idle | sending | sent | error
+  const [code, setCode] = useState("");
+  const [step, setStep] = useState("email"); // email | code
+  const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState("");
 
-  const onSubmit = async (e) => {
+  const sendCode = async (e) => {
     e.preventDefault();
     const trimmed = email.trim();
     if (!trimmed) return;
-    setStatus("sending");
+    setSending(true);
     setError("");
     const { error: err } = await supabase.auth.signInWithOtp({
       email: trimmed,
       options: {
-        emailRedirectTo: window.location.origin,
+        // shouldCreateUser defaults to true; a 6-digit token is included in the
+        // email template via {{ .Token }}. No redirect needed for OTP flow.
+        shouldCreateUser: true,
       },
     });
+    setSending(false);
     if (err) {
-      setStatus("error");
-      setError(err.message || "Could not send magic link.");
+      setError(err.message || "Could not send code.");
       return;
     }
-    setStatus("sent");
+    setStep("code");
+  };
+
+  const verify = async (e) => {
+    e.preventDefault();
+    const trimmed = code.trim();
+    if (trimmed.length < 6) {
+      setError("Enter the 6-digit code from your email.");
+      return;
+    }
+    setVerifying(true);
+    setError("");
+    const { error: err } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: trimmed,
+      type: "email",
+    });
+    setVerifying(false);
+    if (err) {
+      setError(err.message || "Invalid or expired code.");
+      return;
+    }
+    // App.jsx onAuthStateChange will pick up the session and swap views.
+  };
+
+  const resend = async () => {
+    setError("");
+    setSending(true);
+    const { error: err } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: { shouldCreateUser: true },
+    });
+    setSending(false);
+    if (err) setError(err.message || "Could not resend.");
   };
 
   return (
@@ -66,63 +104,8 @@ export default function Login() {
           SCRIPT A/B TESTING
         </p>
 
-        {status === "sent" ? (
-          <div
-            style={{
-              background: "#151515",
-              border: "1px solid #1e1e1e",
-              borderRadius: 12,
-              padding: 20,
-              textAlign: "center",
-            }}
-          >
-            <div
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: 12,
-                color: "#c4ff36",
-                fontWeight: 700,
-                letterSpacing: 1,
-                marginBottom: 8,
-              }}
-            >
-              CHECK YOUR EMAIL
-            </div>
-            <p
-              style={{
-                margin: 0,
-                fontFamily: "var(--body)",
-                fontSize: 14,
-                color: "#888888",
-                lineHeight: 1.6,
-              }}
-            >
-              We sent a magic link to
-              <br />
-              <span style={{ color: "#eeeeee" }}>{email}</span>
-            </p>
-            <button
-              onClick={() => {
-                setStatus("idle");
-                setEmail("");
-              }}
-              style={{
-                marginTop: 16,
-                background: "transparent",
-                border: "1px solid #222222",
-                borderRadius: 6,
-                color: "#888888",
-                padding: "6px 12px",
-                fontSize: 11,
-                fontFamily: "var(--mono)",
-                cursor: "pointer",
-              }}
-            >
-              Use a different email
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={onSubmit}>
+        {step === "email" ? (
+          <form onSubmit={sendCode}>
             <label
               htmlFor="email"
               style={{
@@ -160,14 +143,11 @@ export default function Login() {
             />
             <button
               type="submit"
-              disabled={status === "sending"}
+              disabled={sending}
               style={{
                 marginTop: 12,
                 width: "100%",
-                background:
-                  status === "sending"
-                    ? "rgba(196,255,54,0.06)"
-                    : "rgba(196,255,54,0.1)",
+                background: sending ? "rgba(196,255,54,0.06)" : "rgba(196,255,54,0.1)",
                 border: "1px solid rgba(196,255,54,0.25)",
                 borderRadius: 8,
                 color: "#c4ff36",
@@ -176,10 +156,10 @@ export default function Login() {
                 fontFamily: "var(--mono)",
                 fontWeight: 700,
                 letterSpacing: 1,
-                cursor: status === "sending" ? "default" : "pointer",
+                cursor: sending ? "default" : "pointer",
               }}
             >
-              {status === "sending" ? "SENDING..." : "SEND MAGIC LINK"}
+              {sending ? "SENDING..." : "EMAIL ME A CODE"}
             </button>
             {error && (
               <p
@@ -188,6 +168,141 @@ export default function Login() {
                   fontFamily: "var(--mono)",
                   fontSize: 11,
                   color: "#f87171",
+                }}
+              >
+                {error}
+              </p>
+            )}
+          </form>
+        ) : (
+          <form onSubmit={verify}>
+            <div
+              style={{
+                fontFamily: "var(--mono)",
+                fontSize: 11,
+                color: "#888",
+                textAlign: "center",
+                marginBottom: 14,
+                lineHeight: 1.5,
+              }}
+            >
+              Check your email for a 6-digit code
+              <br />
+              <span style={{ color: "#555" }}>sent to {email}</span>
+            </div>
+            <label
+              htmlFor="code"
+              style={{
+                display: "block",
+                fontFamily: "var(--mono)",
+                fontSize: 10,
+                color: "#555555",
+                letterSpacing: 1,
+                marginBottom: 6,
+              }}
+            >
+              CODE
+            </label>
+            <input
+              id="code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              required
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+              placeholder="000000"
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                background: "#151515",
+                border: "1px solid #222222",
+                borderRadius: 8,
+                color: "#eeeeee",
+                padding: "12px 14px",
+                fontSize: 22,
+                fontFamily: "var(--mono)",
+                fontWeight: 700,
+                letterSpacing: 6,
+                textAlign: "center",
+                outline: "none",
+              }}
+            />
+            <button
+              type="submit"
+              disabled={verifying}
+              style={{
+                marginTop: 12,
+                width: "100%",
+                background: verifying ? "rgba(196,255,54,0.06)" : "rgba(196,255,54,0.1)",
+                border: "1px solid rgba(196,255,54,0.25)",
+                borderRadius: 8,
+                color: "#c4ff36",
+                padding: "12px 14px",
+                fontSize: 13,
+                fontFamily: "var(--mono)",
+                fontWeight: 700,
+                letterSpacing: 1,
+                cursor: verifying ? "default" : "pointer",
+              }}
+            >
+              {verifying ? "VERIFYING..." : "VERIFY CODE"}
+            </button>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginTop: 14,
+                gap: 8,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setStep("email");
+                  setCode("");
+                  setError("");
+                }}
+                style={{
+                  background: "transparent",
+                  border: "1px solid #222222",
+                  borderRadius: 6,
+                  color: "#888888",
+                  padding: "6px 12px",
+                  fontSize: 11,
+                  fontFamily: "var(--mono)",
+                  cursor: "pointer",
+                }}
+              >
+                ← Change email
+              </button>
+              <button
+                type="button"
+                onClick={resend}
+                disabled={sending}
+                style={{
+                  background: "transparent",
+                  border: "1px solid #222222",
+                  borderRadius: 6,
+                  color: "#888888",
+                  padding: "6px 12px",
+                  fontSize: 11,
+                  fontFamily: "var(--mono)",
+                  cursor: "pointer",
+                }}
+              >
+                {sending ? "Sending..." : "Resend code"}
+              </button>
+            </div>
+            {error && (
+              <p
+                style={{
+                  marginTop: 10,
+                  fontFamily: "var(--mono)",
+                  fontSize: 11,
+                  color: "#f87171",
+                  textAlign: "center",
                 }}
               >
                 {error}
