@@ -35,7 +35,7 @@ export default function Login() {
     e.preventDefault();
     const trimmed = code.trim();
     if (trimmed.length < 6) {
-      setError("Enter the 6-digit code from your email.");
+      setError("Enter the code from your email.");
       return;
     }
     setVerifying(true);
@@ -186,7 +186,7 @@ export default function Login() {
                 lineHeight: 1.5,
               }}
             >
-              Check your email for a 6-digit code
+              Check your email for a login code
               <br />
               <span style={{ color: "#555" }}>sent to {email}</span>
             </div>
@@ -209,10 +209,10 @@ export default function Login() {
               inputMode="numeric"
               autoComplete="one-time-code"
               required
-              maxLength={6}
+              maxLength={10}
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-              placeholder="000000"
+              placeholder="code"
               style={{
                 width: "100%",
                 boxSizing: "border-box",
@@ -224,7 +224,7 @@ export default function Login() {
                 fontSize: 22,
                 fontFamily: "var(--mono)",
                 fontWeight: 700,
-                letterSpacing: 6,
+                letterSpacing: 4,
                 textAlign: "center",
                 outline: "none",
               }}
