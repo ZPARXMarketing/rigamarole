@@ -5,53 +5,32 @@ sections, swap between variants per section, score each after calls
 (✗ didn't work, ? unsure, ✓ worked), and the app tracks win rates. A "Winner"
 view compiles the best-performing variant from each section into one script.
 
-Stack: Vite + React, Tailwind, `@supabase/supabase-js`, deployed on Netlify.
+Stack: Vite + React, Tailwind, deployed on Netlify.
+
+No login — the app opens straight to the script. All data is stored locally in
+the browser.
 
 ## 1. Local setup
 
 ```bash
 npm install
-cp .env.example .env
-# Fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
 npm run dev
 ```
 
-## 2. Supabase setup
-
-In your Supabase project (`rigamarole`):
-
-### Auth
-- Auth → Providers → **Email**: enable.
-- Auth → Providers → Email → enable **"Magic Link"** (email OTP) sign-in.
-- Auth → URL Configuration → add your Netlify production URL and
-  `http://localhost:5173` to **Redirect URLs**.
-
-### Database
-Run `supabase/migrations/0001_init.sql` in the SQL editor. It creates:
-
-- `public.script_data (user_id uuid pk, cards jsonb not null, updated_at timestamptz)`
-- RLS **enabled**
-- Policies — `SELECT` / `INSERT` / `UPDATE` all gated on `auth.uid() = user_id`
-
-## 3. Netlify deploy
+## 2. Netlify deploy
 
 - Connect the GitHub repo to Netlify.
 - Build command: `npm run build`
 - Publish directory: `dist`
-- Environment variables:
-  - `VITE_SUPABASE_URL`
-  - `VITE_SUPABASE_ANON_KEY`
 
 `netlify.toml` includes an SPA redirect so client-side routes work.
 
 ## Architecture
 
-- `src/App.jsx` — auth gate (session → `ScriptFlow`, otherwise `Login`).
-- `src/Login.jsx` — magic link sign-in.
+- `src/App.jsx` — renders `ScriptFlow` directly (no auth gate).
 - `src/ScriptFlow.jsx` — tabbed app (Script / Scores / Winner / Edit).
-- `src/supabaseClient.js` — Supabase browser client.
-- `src/defaultCards.js` — seed data for a brand-new user.
+- `src/defaultCards.js` — seed data for a fresh browser.
 
 Persistence: on every score tap, variant swap, or edit, the full `cards`
-array is upserted to `script_data` keyed by `user_id`. Saves are debounced
-to 500ms to keep rapid taps from spamming the API.
+array is written to `localStorage` under the key `rigmarole_cards`. Data is
+per-browser/device and is not synced across devices.

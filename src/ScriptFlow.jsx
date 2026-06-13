@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { supabase } from "./supabaseClient.js";
+import { useState } from "react";
 import { DEFAULT_CARDS, uid } from "./defaultCards.js";
+
+const STORAGE_KEY = "rigmarole_cards";
 
 function hl(text) {
   return text.replace(
@@ -400,7 +401,7 @@ function WinnerView({ cards }) {
 }
 
 /* ── Edit View ── */
-function EditView({ cards, onUpdate, onSignOut }) {
+function EditView({ cards, onUpdate }) {
   const [editing, setEditing] = useState(null);
   const [eLabel, setELabel] = useState("");
   const [eText, setEText] = useState("");
@@ -766,123 +767,34 @@ function EditView({ cards, onUpdate, onSignOut }) {
           + Add
         </button>
       </div>
-
-      <div style={{ marginTop: 32, paddingTop: 16, borderTop: "1px solid #1e1e1e" }}>
-        <button
-          onClick={onSignOut}
-          style={{
-            width: "100%",
-            background: "transparent",
-            border: "1px solid #2a2a2a",
-            borderRadius: 8,
-            color: "#888",
-            padding: "10px 14px",
-            fontSize: 12,
-            cursor: "pointer",
-            fontFamily: "var(--mono)",
-            letterSpacing: 1,
-          }}
-        >
-          SIGN OUT
-        </button>
-      </div>
     </div>
   );
 }
 
 /* ── Main App ── */
-export default function ScriptFlow({ session }) {
-  const [cards, setCards] = useState(DEFAULT_CARDS);
+export default function ScriptFlow() {
+  // Load saved cards from localStorage, falling back to the seed deck.
+  const [cards, setCards] = useState(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length) return parsed;
+      }
+    } catch {
+      // Corrupt or unavailable storage — fall through to defaults.
+    }
+    return DEFAULT_CARDS;
+  });
   const [view, setView] = useState("script");
-  const [loaded, setLoaded] = useState(false);
-  const saveTimerRef = useRef(null);
-  const pendingRef = useRef(null);
-  const userId = session.user.id;
-
-  // Initial load: fetch row for this user or insert defaults if missing.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data, error } = await supabase
-        .from("script_data")
-        .select("cards")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (cancelled) return;
-
-      if (error) {
-        // eslint-disable-next-line no-console
-        console.error("Failed to load script_data:", error);
-        setLoaded(true);
-        return;
-      }
-
-      if (data?.cards && Array.isArray(data.cards) && data.cards.length) {
-        setCards(data.cards);
-      } else {
-        const { error: upErr } = await supabase
-          .from("script_data")
-          .upsert(
-            { user_id: userId, cards: DEFAULT_CARDS, updated_at: new Date().toISOString() },
-            { onConflict: "user_id" }
-          );
-        if (upErr) {
-          // eslint-disable-next-line no-console
-          console.error("Failed to seed script_data:", upErr);
-        }
-      }
-      setLoaded(true);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [userId]);
-
-  // Debounced persist
-  const persist = useCallback(
-    (nextCards) => {
-      pendingRef.current = nextCards;
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = setTimeout(async () => {
-        const payload = pendingRef.current;
-        const { error } = await supabase
-          .from("script_data")
-          .upsert(
-            { user_id: userId, cards: payload, updated_at: new Date().toISOString() },
-            { onConflict: "user_id" }
-          );
-        if (error) {
-          // eslint-disable-next-line no-console
-          console.error("Failed to save script_data:", error);
-        }
-      }, 500);
-    },
-    [userId]
-  );
-
-  // Flush pending save on unmount
-  useEffect(() => {
-    return () => {
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current);
-        const payload = pendingRef.current;
-        if (payload) {
-          supabase
-            .from("script_data")
-            .upsert(
-              { user_id: userId, cards: payload, updated_at: new Date().toISOString() },
-              { onConflict: "user_id" }
-            )
-            .then(() => {});
-        }
-      }
-    };
-  }, [userId]);
 
   const update = (nc) => {
     setCards(nc);
-    persist(nc);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(nc));
+    } catch {
+      // Ignore quota / private-mode write failures; state still updates.
+    }
   };
 
   const swapVariant = (cardId, dir) => {
@@ -909,28 +821,6 @@ export default function ScriptFlow({ session }) {
       })
     );
   };
-
-  const onSignOut = async () => {
-    await supabase.auth.signOut();
-  };
-
-  if (!loaded) {
-    return (
-      <div
-        style={{
-          background: "#111",
-          color: "#444",
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "var(--mono)",
-        }}
-      >
-        Loading...
-      </div>
-    );
-  }
 
   const tabs = [
     { id: "script", label: "Script" },
@@ -973,7 +863,7 @@ export default function ScriptFlow({ session }) {
           ))}
         {view === "scores" && <ScoresView cards={cards} />}
         {view === "winner" && <WinnerView cards={cards} />}
-        {view === "edit" && <EditView cards={cards} onUpdate={update} onSignOut={onSignOut} />}
+        {view === "edit" && <EditView cards={cards} onUpdate={update} />}
       </div>
 
       <div
